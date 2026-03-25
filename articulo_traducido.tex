@@ -1,0 +1,407 @@
+\documentclass[12pt,a4paper]{article}
+
+% Paquetes necesarios
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+
+\geometry{margin=2.5cm}
+\onehalfspacing
+
+% Configuración de encabezados
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Reconstrucción de Lanzamientos de Béisbol}
+\lhead{R. D. DeBoskey et al.}
+\cfoot{\thepage}
+
+\title{\textbf{Reconstrucción Robusta de Trayectorias de Lanzamientos de Béisbol Utilizando Redes Neuronales Artificiales con Datos Ruidosos}}
+
+\author{
+Ryan D. DeBoskey\textsuperscript{1}, Veeraraghava R. Hasti\textsuperscript{1} y Venkateswaran Narayanaswamy\textsuperscript{1}\\[0.5cm]
+\textsuperscript{1}Departamento de Ingeniería Mecánica y Aeroespacial,\\
+Universidad (afiliación del artículo original)
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent Los sistemas de seguimiento de lanzamientos en tiempo real empleados por la Liga Mayor de Béisbol (MLB) proporcionan análisis valioso de velocidad, movimiento y rotación de los lanzamientos para la toma de decisiones. Sin embargo, estos sistemas actualmente no son accesibles para el béisbol amateur e internacional. Proponemos una metodología basada en redes neuronales artificiales (RNA) de bajo costo para la reconstrucción de trayectorias de lanzamientos de béisbol donde la tecnología de alta gama es inaccesible. Utilizamos un algoritmo de reconstrucción de tres puntos con redes neuronales para determinar las condiciones iniciales del lanzamiento a partir de posiciones espaciotemporales del béisbol. Entrenamos modelos de RNA utilizando datos de lanzamientos sintéticos para evaluar el rendimiento de la reconstrucción de trayectorias. Además, realizamos un análisis de robustez, demostrando que la inyección de ruido en el conjunto de datos de entrenamiento mejora sustancialmente la robustez de la predicción. Las características mejoradas de robustez del modelo de RNA con ruido inyectado lo hacen adecuado para sistemas de seguimiento de lanzamientos de baja fidelidad.
+
+\vspace{0.5cm}
+\noindent\textbf{Palabras clave:} béisbol; red neuronal; seguimiento de lanzamientos; reconstrucción de trayectorias; métodos numéricos
+
+\end{abstract}
+
+\section{Introducción}
+
+El béisbol es un deporte rico en datos, donde la recopilación de datos avanzados ha revolucionado silenciosamente la toma de decisiones del deporte \citep{hintz2022}. Las estadísticas han desempeñado un papel particularmente importante en el béisbol como herramienta de evaluación de jugadores, permitiendo a los gerentes generales realizar evaluaciones respaldadas por datos de los jugadores para identificar estrategias que maximizan las victorias dada una restricción de nómina. Sistemas de seguimiento de lanzamientos en tiempo real en béisbol, como el sistema Hawk-Eye implementado recientemente por la MLB, proporcionan métricas cuantitativas sobre velocidad, movimiento y tasa de rotación de los lanzamientos. Los datos de seguimiento de lanzamientos se utilizan en el análisis de juegos para informar decisiones de personal para equipos de béisbol, incluyendo el encuadramiento de lanzamientos \citep{deshpande2017} y la predicción de tipo de lanzamiento \citep{umemura2021}.
+
+El alto costo de adquisición de sistemas de seguimiento de alta gama es actualmente prohibitivo para las ligas amateurs e internacionales. Por lo tanto, se requieren avances en metodologías de seguimiento de bajo costo para satisfacer la creciente demanda de métricas de rendimiento cuantitativas para apoyar el avance de jugadores fuera del béisbol de élite. Esto es crítico para los niveles universitarios, de ligas menores, amateurs e internacionales de béisbol, donde el acceso y la asequibilidad de dichos sistemas de seguimiento son limitados. Los sistemas típicos de seguimiento de alta fidelidad están equipados con múltiples cámaras de alta tasa de cuadros que proporcionan datos de alta velocidad y precisión de la ubicación del lanzamiento \citep{kim2019}. Los sistemas de bajo costo propuestos emplearán típicamente teléfonos inteligentes o cámaras de bajo costo con menor fidelidad, por lo que la robustez al ruido espaciotemporal es crítica. El algoritmo de reconstrucción de trayectorias debe ser aplicable en un amplio rango de tasas de rotación y velocidades.
+
+En el presente trabajo, consideramos el uso novedoso de redes neuronales artificiales (RNA) para la reconstrucción de trayectorias en lanzamientos sintéticos con velocidad y tasa de rotación variables. El problema de visión por computadora y seguimiento no se considera dentro del alcance de este artículo. El uso de RNA en béisbol ha sido escaso en relación con la proliferación de RNA en otros campos. Las RNA en béisbol se han utilizado para predecir juegos ganadores \citep{huang2021}, asistencia a estadios \citep{park2017}, tipo y ubicación de lanzamientos \citep{lee2022}, y estatus en el Salón de la Fama \citep{smith2009}. Las RNA se consideran aproximadores universales de funciones, haciéndolas muy adecuadas para capturar rápida y precisamente la trayectoria no lineal del béisbol a partir de entradas de datos limitadas. Además, trabajos recientes con modelos de redes neuronales profundas han demostrado que la inyección de ruido aleatorio en el conjunto de datos de entrenamiento puede mejorar la robustez de los modelos \citep{fawzi2016,he2019,sietsma1991}. En el presente estudio, entrenamos RNA utilizando el enfoque de tres puntos, en el cual solo se necesitan tres cuadros espaciotemporales de la ubicación del béisbol, representando la información mínima viable necesaria para determinar la trayectoria completa del lanzamiento. Diseñamos modelos de RNA que son adecuados para sistemas de seguimiento de cámaras de baja fidelidad (que proporcionan ubicación ruidosa del béisbol) explotando las propiedades de robustez de RNA con ruido inyectado. En última instancia, el desarrollo y proliferación de sistemas robustos de seguimiento de lanzamientos serán críticos para expandir la accesibilidad de análisis de calidad.
+
+\subsection{Novedades y Contribuciones}
+
+Nuestras novedades y contribuciones de esta investigación son las siguientes:
+
+\begin{itemize}
+    \item El marco de reconstrucción propuesto tiene el potencial de democratizar el acceso a datos cuantitativos en todos los niveles de béisbol. Estudios limitados han considerado la reconstrucción de lanzamientos en entornos donde la tecnología de alta gama es inaccesible, lo que permitirá el desarrollo de sistemas robustos de bajo costo (por ejemplo, aplicaciones de teléfonos inteligentes) para recopilar métricas cuantitativas de lanzamientos en todos los niveles. El desarrollo de tales sistemas es vital para llevar análisis avanzados al béisbol amateur e internacional para mejorar el rendimiento de los jugadores, el scouting y la gestión de personal.
+    
+    \item El uso de modelos de RNA para la reconstrucción de lanzamientos es la principal novedad de este trabajo. Hasta donde sabemos, el uso de RNA no se ha considerado previamente para la reconstrucción de trayectorias. Los modelos de RNA requieren sustancialmente menos experiencia en el dominio para evaluar la trayectoria del lanzamiento en comparación con los enfoques iterativos tradicionales, empoderando el desarrollo continuo.
+    
+    \item Al utilizar las características de robustez de las RNA entrenadas con datos ruidosos, nuestro algoritmo demuestra mayores propiedades de robustez sobre los métodos existentes. Este modelo basado en RNA propuesto permite el desarrollo de soluciones rentables para el seguimiento de lanzamientos utilizando cámaras y sensores de bajo costo ruidosos. La metodología de robustez considerada servirá como línea base para evaluar el rendimiento de futuros algoritmos y sistemas.
+\end{itemize}
+
+El resto de este estudio está organizado de la siguiente manera. La Sección 2 detalla la generación de lanzamientos sintéticos y el entrenamiento del modelo de RNA. La Sección 3 presenta los resultados, incluyendo un análisis de robustez realizado para determinar la idoneidad de la predicción de RNA con ruido de entrada creciente. La Sección 4 presenta las conclusiones, mostrando que la RNA es capaz de reconstruir la trayectoria del lanzamiento con alta precisión y propiedades de error robustas.
+
+\section{Método Numérico}
+
+\subsection{Lanzamientos de Béisbol Simulados}
+
+Una vez que el béisbol sale de la mano del lanzador, la física complicada que gobierna la aerodinámica del vuelo del béisbol determina la trayectoria del lanzamiento. El lanzador elige un tipo de lanzamiento (con una trayectoria prevista correspondiente) e imparte la velocidad inicial y rotación al béisbol. Al invocar la segunda ley de Newton, la suma de fuerzas que actúan sobre el béisbol da la correspondiente aceleración del béisbol durante el vuelo:
+
+\begin{equation}
+\mathbf{a} = \frac{\mathbf{F}}{m} = \mathbf{f}_D + \mathbf{f}_M + \mathbf{f}_G
+\end{equation}
+
+donde $\mathbf{f}_D$, $\mathbf{f}_M$, y $\mathbf{f}_G$ son las aceleraciones de arrastre, magnus y gravedad debido a sus respectivas fuerzas (nota: los símbolos en negrita denotan cantidades vectoriales).
+
+Simulamos lanzamientos sintéticos en Python utilizando un script por lotes. El eje $x$ está orientado horizontalmente desde el montículo hacia el home, el eje $y$ está orientado horizontalmente transversalmente hacia la caja de bateo izquierda, y el eje $z$ está orientado verticalmente hacia arriba.
+
+La Tabla \ref{tab:parametros} muestra los parámetros de trayectoria del lanzamiento para la ejecución por lotes de lanzamientos sintéticos de béisbol, donde $|\omega|$, $v_o$, $\phi$, $\alpha$, $t_f$, y $\Delta t$ son la magnitud de la tasa de rotación, magnitud de la velocidad inicial, ángulo del eje de rotación, ángulo de lanzamiento, duración de la simulación y paso de tiempo de la simulación, respectivamente.
+
+\begin{table}[H]
+\centering
+\caption{Resumen de parámetros de trayectoria de lanzamiento utilizados para simulaciones sintéticas por lotes.}
+\label{tab:parametros}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+$|\omega|$ [rpm] & $v_o$ [mph] & $\phi$ [grados] & $\alpha$ [grados] & $t_f$ [s] & $\Delta t$ [ms] \\
+\midrule
+800--3,300 & 70--100 & 45 & 1 & 0.5 & 2.083 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Basándonos en los datos, variamos la magnitud de la tasa de rotación, $|\omega|$, entre 800 y 3,300 rpm y la magnitud de la velocidad inicial, $v_o$, entre 70 y 100 mph. Entrenamos la RNA con muestras fuera de los límites de los lanzamientos típicos para proporcionar una distribución de muestreo robusta (útil en el rendimiento predictivo para trayectorias del mundo real). Establecimos la velocidad inicial como $\mathbf{v} = (v_o \cos\alpha, 0, v_o \sin\alpha)$, donde $\alpha$ es 1°. Las ejecuciones por lotes asumieron un eje de tasa de rotación constante orientado en la dirección $\phi = 45°$ equidistante entre los ejes $y$ y $z$ sin componente en la dirección $x$. Asumimos que la posición inicial es $\mathbf{x}_o = (0, 0, 0)$ para todos los lanzamientos.
+
+Produjimos datos sintéticos para el entrenamiento de la RNA integrando las ecuaciones gobernantes para la trayectoria de vuelo del béisbol. Simulamos 30,000 trayectorias de lanzamientos con una tasa de rotación y velocidad inicial muestreadas aleatoriamente de una distribución uniforme. Usar un gran número de trayectorias sintéticas aumenta la robustez del rendimiento del modelo al suministrar muchas muestras a lo largo de trayectorias extremas. Compilamos tres cuadros de posición en la trayectoria del lanzamiento de cada trayectoria a 60 cuadros por segundo, con el último cuadro correspondiente a $t_3 = 0.5$ s para todas las ejecuciones. Elegimos 60 cuadros por segundo como la tasa de intervalo ya que es estándar para teléfonos móviles comerciales.
+
+\subsection{Arquitectura de la Red Neuronal Artificial}
+
+Utilizamos el conjunto de datos producido sintéticamente (descrito en la subsección anterior) para entrenar un modelo de RNA usando la biblioteca de código abierto TensorFlow \citep{abadi2016}. Dividimos el conjunto de datos en un conjunto de entrenamiento y prueba, con 80\% y 20\% de los datos, respectivamente. Una RNA fue entrenada sin ruido artificial en el conjunto de entrenamiento, designada ``\textit{Silenciosa}'' (Quiet), y una RNA fue entrenada con una distribución uniforme de error máximo de 25 mm ($\sim$1 pulgada), designada ``\textit{Ruidosa}'' (Noisy). Inyectamos ruido en cada punto de muestra independientemente de una distribución uniforme con un error máximo conocido. La inyección de ruido aleatorio simula la incertidumbre asociada con la identificación de la ubicación espaciotemporal del béisbol en un sistema de seguimiento de cámaras de baja fidelidad.
+
+Después del entrenamiento, inyectamos en el conjunto de datos de prueba ruido en incrementos de 2 mm hasta 50 mm para evaluar los modelos en cuanto a robustez y determinar tendencias en el escalado de errores con datos de entrada cada vez más ruidosos. Esto se representa matemáticamente como:
+
+\begin{equation}
+\mathbf{x} \rightarrow \begin{pmatrix} \mathbf{x}_1 \\ \mathbf{x}_2 \\ \mathbf{x}_3 \end{pmatrix} + \begin{pmatrix} \text{rand}[-a, a] \\ \text{rand}[-a, a] \\ \text{rand}[-a, a] \end{pmatrix} = \tilde{\mathbf{x}}
+\end{equation}
+
+donde rand es un operador que selecciona un valor aleatorio en la distribución y $\tilde{\mathbf{x}}$ es el ruido inyectado en los datos de prueba.
+
+Realizamos un estudio de sensibilidad para determinar los hiperparámetros óptimos de la RNA para el modelo final, resumido en la Tabla \ref{tab:hiperparametros}. La arquitectura del modelo final está compuesta por 3 capas ocultas, cada una compuesta por 128 neuronas. La entrada son los datos de posición de 9 dimensiones de la ubicación del béisbol en cuadros consecutivos en el tiempo ($\mathbf{x}_1$, $\mathbf{x}_2$, $\mathbf{x}_3$) y la salida es un arreglo bidimensional de magnitudes de tasa de rotación y velocidad, $\mathbf{y} = (|\omega|, v_0)$.
+
+\begin{table}[H]
+\centering
+\caption{Resumen de hiperparámetros óptimos determinados a través del estudio de sensibilidad para uso en el entrenamiento final de la RNA.}
+\label{tab:hiperparametros}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Tamaño de lote & Función de activación & Capas ocultas & Épocas \\
+\midrule
+20 & ReLU & 3 & 100 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Utilizamos el método de estimación de momento adaptativo (ADAM) para optimización estocástica \citep{kingma2014} para minimizar el error cuadrático medio (MSE, por sus siglas en inglés), la función de pérdida dada por:
+
+\begin{equation}
+\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2
+\end{equation}
+
+donde $\hat{y}_i$ y $y_i$ son la salida predicha por la RNA y los valores verdaderos, respectivamente. Aplicamos la función de activación sigmoide, $\sigma(\zeta)$, en la capa de salida para devolver un valor normalizado de $[0, 1]$, representado matemáticamente como:
+
+\begin{equation}
+\sigma(\zeta) = \frac{1}{1 + e^{-\zeta}}
+\end{equation}
+
+donde $\zeta$ es un valor escalar. Entrenamos la RNA final durante 100 épocas, lo cual se encontró que era un buen compromiso entre la pérdida de entrenamiento y prueba para asegurar que el modelo no estuviera sobre-ajustado ni sub-ajustado. El entrenamiento de los modelos de RNA en 24,000 trayectorias de lanzamientos requirió aproximadamente 5 minutos en un solo CPU Intel\textsuperscript{\textregistered} Core\textsuperscript{TM} i7-8550U.
+
+\subsection{Análisis de Robustez e Incertidumbre}
+
+Evaluamos un error relativo y una distancia de error euclidiano para cuantificar la precisión del lanzamiento reconstruido. Todas las mediciones de error se tomaron desde el punto medio de la trayectoria del lanzamiento, consistente con enfoques anteriores \citep{aguirre2018}. El error relativo, $\epsilon$, se define como la diferencia normalizada en la posición final:
+
+\begin{equation}
+\epsilon = \frac{|\hat{\mathbf{x}} - \mathbf{x}_T|_2}{\mathbf{x}_T^2}
+\end{equation}
+
+donde $\hat{\mathbf{x}}$ es la posición predicha por la RNA y $\mathbf{x}_T$ es la posición ``verdadera'' de la trayectoria sintética.
+
+A continuación, definimos la distancia euclidiana de acuerdo con el trabajo de Aguirre-López et al. (2018), permitiendo comparaciones directas de rendimiento entre los enfoques iterativos tradicionales y de RNA. El error de distancia euclidiana, $\delta$, se define como la norma L2 de la distancia entre la trayectoria verdadera y la trayectoria predicha por la RNA:
+
+\begin{equation}
+\delta = \|\hat{\mathbf{x}} - \mathbf{x}_T\|_{L2}
+\end{equation}
+
+Evaluamos la robustez de cada modelo de RNA (\textit{Silencioso} y \textit{Ruidoso}) calculando cada métrica de error con mayor inyección de ruido. Esto simula efectivamente un sistema de seguimiento de cámaras del mundo real cada vez más ruidoso. Inyectamos error muestreando de una distribución uniforme $[-a, a]$ en incrementos de 2 mm hasta un error máximo de 50 mm para cada coordenada espacial.
+
+Cuantificamos la propagación de la incertidumbre del modelo de RNA en la predicción de lanzamientos (incertidumbre de posición de entrada a incertidumbre de salida) utilizando el Método de Monte Carlo (MCM) \citep{metropolis1949,rubinstein2016}. Elegimos un solo lanzamiento representativo con una tasa de rotación de 1,500 rpm y velocidad inicial de 90 mph. Luego inyectamos ruido a la trayectoria usando $a = 2$ mm y 20 mm asumiendo una distribución uniforme, $[-a, a]$. Esta evaluación simula una comparación entre un sistema de seguimiento de cámaras teórico de alta fidelidad y baja fidelidad, respectivamente.
+
+\section{Resultados}
+
+\subsection{Rendimiento del Modelo de RNA}
+
+La pérdida de entrenamiento y prueba (MSE) converge para ambos modelos de RNA, \textit{Silencioso} y \textit{Ruidoso}. Las pérdidas de entrenamiento y prueba están estrechamente correlacionadas, ya que ambos conjuntos están compuestos de datos similares de las mismas simulaciones por lotes. El modelo de RNA \textit{Silencioso} es capaz de predecir la tasa de rotación y velocidad del lanzamiento con casi un orden de magnitud mayor de precisión para ambos conjuntos de datos de entrenamiento y prueba en comparación con el modelo de RNA \textit{Ruidoso}. El modelo de RNA \textit{Silencioso} converge en un mapeo más preciso debido a la entrada de entrenamiento limpia de alta fidelidad. El modelo de RNA \textit{Ruidoso} tiene menor precisión comparado con el modelo de RNA \textit{Silencioso}, como se esperaba dada la menor fidelidad de los datos de entrenamiento.
+
+\begin{table}[H]
+\centering
+\caption{Pérdida final de entrenamiento y prueba (MSE) para el modelo de RNA convergido usando 24,000 trayectorias de entrenamiento y 6,000 de prueba.}
+\label{tab:perdida}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Modelo & Pérdida de entrenamiento & Pérdida de prueba \\
+\midrule
+\textit{Silencioso} & 1.51e-05 & 2.97e-05 \\
+\textit{Ruidoso} & 2.67e-04 & 2.69e-04 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Reconstruimos trayectorias de lanzamientos para evaluar cuantitativamente el rendimiento de la RNA. Dados los tres cuadros espaciotemporales de posición ($\mathbf{x}(t_1)$, $\mathbf{x}(t_2)$, $\mathbf{x}(t_3)$), cada modelo de RNA produce las magnitudes de velocidad inicial y tasa de rotación ($v_0$, $\omega$). Estos se alimentan como condiciones iniciales a la Ecuación (1) y se utilizan para reconstruir trayectorias para los 6,000 lanzamientos en el conjunto de datos de prueba. Cualitativamente, casi no hay distinción entre las trayectorias simuladas y las verdaderas, mostrando el excelente rendimiento de los modelos en la reconstrucción de lanzamientos.
+
+El rendimiento de ambos modelos de RNA sugiere que la arquitectura del modelo de RNA es adecuada para capturar la relación no lineal entre la ubicación de la posición y las magnitudes de velocidad inicial y tasa de rotación utilizando el enfoque de tres puntos. La evaluación de trayectorias de lanzamientos usando el enfoque basado en RNA es altamente eficiente computacionalmente comparado con los métodos iterativos basados en física \citep{aguirre2018}. Una vez entrenada, la RNA proporciona las condiciones iniciales requeridas en una sola pasada hacia adelante, seguida de una integración de las ecuaciones gobernantes para determinar la trayectoria completa.
+
+\subsection{Análisis de Robustez}
+
+Para evaluar la precisión asociada con un sistema de seguimiento de cámaras ruidoso del mundo real, inyectamos error creciente en el conjunto de datos de prueba ($a = 2$ mm a $a = 50$ mm). La primera tendencia importante es que la inyección de ruido en el conjunto de datos de entrenamiento (modelo de RNA \textit{Ruidoso}) parece aumentar la robustez del rendimiento posterior del modelo.
+
+Para ambos errores relativos y euclidianos, el modelo de RNA \textit{Ruidoso} muestra una distribución bastante estable de error por debajo del umbral de inyección de ruido de entrenamiento de 25 mm. Más allá de 25 mm de inyección de ruido, la mediana y el error máximo del modelo de RNA \textit{Ruidoso} aumentan. Esto indica que los datos de prueba de mayor fidelidad, con ruido inyectado por debajo del umbral de entrenamiento ($a < 25$ mm), tienen poco efecto en la precisión de la predicción del modelo.
+
+\begin{table}[H]
+\centering
+\caption{Resumen de métricas de error relativo y error euclidiano para modelos de RNA probados sin ruido inyectado.}
+\label{tab:errores}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Modelo & Error relativo medio & Error relativo máx. & Error euclidiano medio & Error euclidiano máx. \\
+\midrule
+\textit{Silencioso} & 4.61e-06 & 2.69e-05 & 21.04 mm & 47.50 mm \\
+\textit{Ruidoso} & 2.86e-06 & 4.44e-05 & 15.62 mm & 61.04 mm \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Utilizamos un ajuste de regresión lineal simple en el error euclidiano medio y máximo con ruido creciente para comparar el rendimiento de los modelos de RNA. El modelo lineal toma la forma:
+
+\begin{equation}
+y = \hat{a}x + \hat{b}
+\end{equation}
+
+donde $\hat{a}$ y $\hat{b}$ son el ajuste de regresión lineal de la pendiente e intersección $y$, respectivamente.
+
+\begin{table}[H]
+\centering
+\caption{Resumen de ajustes de regresión lineal para error euclidiano promedio y máximo por modelo de RNA.}
+\label{tab:regresion}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Modelo & Métrica de error & $\hat{a}$ & $\hat{b}$ & $R^2$ \\
+\midrule
+\textit{Silencioso} & Promedio & 2.21 & 12.09 & 0.993 \\
+\textit{Ruidoso} & Promedio & 0.11 & 14.74 & 0.939 \\
+\textit{Silencioso} & Máximo & 10.52 & 31.98 & 0.991 \\
+\textit{Ruidoso} & Máximo & 1.13 & 53.58 & 0.581 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Confirmamos el uso de ruido inyectado para aumentar la robustez del modelo de RNA mediante muchas tendencias observadas en el modelo de regresión lineal. Comparando los modelos de RNA \textit{Ruidoso} y \textit{Silencioso}, tanto para el error euclidiano promedio como máximo, hay una disminución sustancial en el valor $\hat{a}$ predicho para el modelo de RNA \textit{Ruidoso}. Esto indica claramente que el aumento marginal en la incertidumbre máxima del modelo de RNA \textit{Ruidoso} con incertidumbre creciente en los datos de entrada es menor en comparación con el modelo de RNA \textit{Silencioso}. La dependencia más débil del error predicho con el error de entrada creciente en el sistema demuestra la mayor robustez del modelo de RNA \textit{Ruidoso}.
+
+En comparación con el trabajo de Aguirre-López et al. (2018), el modelo de RNA \textit{Silencioso} tiene un rendimiento deficiente sin ruido de prueba inyectado. El modelo iterativo tiene un error sistemático que se aproxima a cero con datos de entrada perfectos. Esto puede entenderse fácilmente, ya que el modelo de RNA está desvinculado de la física gobernante del movimiento del béisbol. El enfoque iterativo resuelve la trayectoria del béisbol, utilizando hasta 25 simulaciones de trayectoria, directamente de la ecuación gobernante durante la reconstrucción del lanzamiento, permitiendo resultados de alta precisión.
+
+A 26 mm de ruido inyectado (aproximadamente 1 pulgada), el modelo de RNA con ruido inyectado es capaz de predecir la trayectoria del béisbol con mayor precisión que el enfoque iterativo tradicional.
+
+\subsection{Análisis de Incertidumbre MCM}
+
+El MCM cuantifica la propagación de la incertidumbre del error de entrada en el modelo de RNA. Evaluamos la incertidumbre de predicción para un solo lanzamiento representativo con velocidad inicial, $v_0 = 90$ mph y tasa de rotación, $\omega = 1,500$ rpm.
+
+\begin{table}[H]
+\centering
+\caption{Resumen de distribuciones de incertidumbre de predicción usando MCM. Media, desviación estándar e intervalos de confianza del 95\% calculados para velocidad inicial, tasa de rotación y error euclidiano.}
+\label{tab:mcm}
+\begin{tabular}{@{}lllccc@{}}
+\toprule
+Caso & Modelo RNA & Inyección de error & Parámetro & Media & Desv. Est. \\
+\midrule
+MCM-Q-2 & \textit{Silencioso} & 2 mm & $v_0$ [mph] & 90.1 & 0.06 \\
+ & & & $\omega$ [rpm] & 1,501 & 4.84 \\
+ & & & $\delta$ [mm] & 7.1 & 2.96 \\
+\midrule
+MCM-Q-20 & \textit{Silencioso} & 20 mm & $v_0$ [mph] & 90.1 & 0.54 \\
+ & & & $\omega$ [rpm] & 1,501 & 49.74 \\
+ & & & $\delta$ [mm] & 51.6 & 37.10 \\
+\midrule
+MCM-N-2 & \textit{Ruidoso} & 2 mm & $v_0$ [mph] & 90.22 & 0.01 \\
+ & & & $\omega$ [rpm] & 1,558 & 3.86 \\
+ & & & $\delta$ [mm] & 18.3 & 0.81 \\
+\midrule
+MCM-N-20 & \textit{Ruidoso} & 20 mm & $v_0$ [mph] & 90.2 & 0.07 \\
+ & & & $\omega$ [rpm] & 1,558 & 37.45 \\
+ & & & $\delta$ [mm] & 18.6 & 7.64 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Los resultados muestran que el modelo de RNA \textit{Silencioso} predice un error de distancia euclidiana más bajo y una velocidad y tasa de rotación del lanzamiento más precisas en comparación con la RNA \textit{Ruidosa} con la inyección de ruido de entrada bajo (es decir, sistema de seguimiento de alta fidelidad). La función de distribución de probabilidad (PDF) de predicción para la RNA \textit{Silenciosa} está centrada en la tasa de rotación verdadera y casi centrada en la velocidad inicial verdadera. Con mayor inyección de ruido, la PDF predicha se amplía apreciablemente, pero permanece centrada en la velocidad inicial y tasa de rotación verdaderas.
+
+En comparación, la PDF predicha de la RNA \textit{Ruidosa} no está centrada en la velocidad inicial o tasa de rotación verdaderas, pero la PDF predicha no se amplía apreciablemente con mayor inyección de ruido. El resultado es que el error euclidiano no aumenta apreciablemente para la RNA \textit{Ruidosa} en comparación con la RNA \textit{Silenciosa}, que ve una imprecisión de predicción mucho mayor.
+
+Estos resultados demuestran que el ruido inyectado en el conjunto de datos de entrenamiento de entrada (modelo de RNA \textit{Ruidoso}) aumenta la robustez del valor predicho. Esto puede entenderse como que el modelo de RNA \textit{Ruidoso} ha aprendido una representación de menor fidelidad de la física de la trayectoria del béisbol que es tolerante a fallas debido a la presencia de ruido dentro del conjunto de datos. Alternativamente, el modelo de RNA \textit{Silencioso} no contende con entradas de entrenamiento ruidosas y aprende una representación de mayor fidelidad de la física de la trayectoria del béisbol, como se evidencia por la menor pérdida de entrenamiento.
+
+La selección de RNA debe basarse en el sistema de seguimiento de cámaras disponible, y se debe establecer una estimación adecuada de la incertidumbre del seguimiento de cámaras. Esto es beneficioso tanto para 1) la selección de inyección de ruido en el entrenamiento del modelo como para 2) proporcionar métricas de incertidumbre adecuadas para el uso final en el análisis de datos.
+
+\section{Conclusiones}
+
+El seguimiento detallado de lanzamientos a gran escala es actualmente inviable debido al alto costo limitante de los sistemas empleados por la MLB y el béisbol universitario de alto nivel. Los avances en el seguimiento de lanzamientos (que proporciona datos cuantitativos sobre velocidad, movimiento y rotación del lanzamiento) son necesarios para permitir una mejor toma de decisiones para los gerentes de personal. Investigamos el uso de redes neuronales artificiales y un esquema de reconstrucción de lanzamientos de tres puntos como un posible método para desarrollar sistemas de seguimiento de lanzamientos de béisbol rentables donde la tecnología de alta gama es inaccesible. Demostramos que las RNA entrenadas usando trayectorias de lanzamientos sintéticos pueden predecir exitosamente la tasa de rotación y velocidad con alta precisión.
+
+Se entrenaron dos modelos de RNA, uno con datos de entrenamiento de alta fidelidad (\textit{Silencioso}) y uno con ruido uniforme de 25 mm inyectado en el conjunto de datos de entrenamiento (\textit{Ruidoso}). Luego inyectamos ruido uniforme, en incrementos de 2 mm hasta un máximo de 50 mm, en el conjunto de datos de prueba para evaluar el rendimiento de los modelos de RNA (simulando integración de cámaras de baja fidelidad).
+
+Ambos modelos de RNA fueron capaces de reconstruir la trayectoria del lanzamiento con buena precisión. Realizamos un análisis de robustez, demostrando cualidades de robustez mejoradas del modelo de RNA \textit{Ruidoso} sobre el modelo de RNA \textit{Silencioso}. Calculamos funciones de distribución de probabilidad (PDF) de la salida del modelo predicho usando el MCM para cuantificar la incertidumbre del modelo con ruido aumentado. El modelo de RNA \textit{Silencioso} superó al modelo de RNA \textit{Ruidoso} con datos de prueba de alta fidelidad, pero rápidamente tiene un rendimiento inferior con incertidumbre creciente en el conjunto de datos de prueba. El modelo de RNA \textit{Ruidoso} aprendió una representación de menor fidelidad de la física gobernante, resultando en un gran aumento en la desviación estándar para el modelo de RNA \textit{Silencioso} con error creciente.
+
+En comparación con los métodos iterativos tradicionales, el modelo de RNA \textit{Ruidoso} tuvo menos dependencia del error y propiedades de robustez mejoradas. Demostramos que el modelo basado en RNA es adecuado para entrada ruidosa de baja fidelidad, proporcionando un medio alternativo para la reconstrucción de lanzamientos rentable.
+
+\subsection{Trabajo Futuro}
+
+Se requiere trabajo futuro antes de que el modelo sea adecuado para aplicación en el mundo real:
+
+\begin{itemize}
+    \item Para reconstruir completamente la trayectoria del lanzamiento, el modelo debe poder predecir el eje de rotación y el ángulo de lanzamiento del lanzamiento, requiriendo un aumento en el número de parámetros del modelo.
+    \item Además, el modelo asume un punto de lanzamiento conocido y tiempo relativo al lanzamiento, lo que agregará más incertidumbre en la ubicación espaciotemporal del lanzamiento.
+    \item La robustez al ruido semi-aleatorio o direccional requiere pruebas adicionales para asegurar que el sistema pueda tolerar errores sistemáticos en el seguimiento de cámaras de bajo costo.
+    \item El modelo de RNA también requiere integración con sistemas de seguimiento del mundo real para comparar directamente con enfoques tradicionales de reconstrucción de lanzamientos.
+    \item El algoritmo puede extenderse para reconstruir trayectorias de bateo; y con modificación a las ecuaciones gobernantes, a otras reconstrucciones de trayectorias deportivas.
+\end{itemize}
+
+\appendix
+
+\section{Modelo de Trayectoria del Béisbol}
+
+La Ecuación (1) es la ecuación gobernante para la trayectoria del béisbol, derivada de la segunda ley de movimiento de Newton. La ecuación es una versión simplificada derivada de Aguirre-López et al. (2018), que asumió que las fuerzas de cuerpo centrífugas y de Coriolis son ambas despreciables. Las fuerzas centrífugas y de Coriolis son aproximadamente dos órdenes de magnitud más pequeñas que la fuerza de Magnus y generalmente son despreciables para el cálculo de la trayectoria.
+
+La fuerza de arrastre, $\mathbf{f}_D$, fue dada por Giordano (1996):
+
+\begin{equation}
+\mathbf{f}_D = -\left(0.0039 + \frac{0.0058}{1 + \exp((v - v_d)/\Delta)}\right)\mathbf{v} \cdot v
+\end{equation}
+
+donde $\mathbf{v}$ es el vector de velocidad, $v$ es la magnitud de la velocidad, y $v_d = 35$ m/s y $\Delta = 5$ m/s son constantes del modelo calibradas.
+
+La fuerza de Magnus, $\mathbf{f}_M$, está presente y juega un efecto prominente en la física de la trayectoria de la pelota en muchos deportes. La fuerza está orientada ortogonalmente al eje de rotación y la velocidad, resultando en el conocido curvado de los lanzamientos de béisbol. Por el principio de Bernoulli, la fuerza neta fue dada por el producto cruz ($\times$) de la velocidad sobre el eje de rotación:
+
+\begin{equation}
+\mathbf{f}_M = B(\boldsymbol{\omega} \times \mathbf{v})
+\end{equation}
+
+donde $B = 0.00041$ es un factor de escala adimensional dado por Giordano (1996) para béisboles. Asumimos una aceleración constante debido a la gravedad, $g = -9.81$ m/s$^2$, en la dirección $z$. Resolvimos la Ecuación (1) usando integración de tiempo Runge-Kutta de 4to orden con un paso de tiempo fijo, $\Delta t = 2.083$ ms.
+
+\section{Estudio de Sensibilidad de la RNA}
+
+Realizamos un estudio de sensibilidad para determinar el tamaño de lote de entrenamiento, función de activación para las capas ocultas y número de capas ocultas a ser utilizados por el modelo final.
+
+\begin{table}[H]
+\centering
+\caption{Resumen del estudio de sensibilidad de hiperparámetros de la RNA.}
+\label{tab:sensibilidad}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Hiperparámetro & A & B & C & D \\
+\midrule
+Tamaño de lote & 10 & 20 & 30 & 40 \\
+Función de activación & sigmoide & tanh & ReLU & leakyrelu \\
+Capas ocultas & 1 & 2 & 3 & 4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El tiempo de entrenamiento de la RNA fue en gran medida insensible al tamaño de lote. Aunque la pérdida disminuye significativamente con menos épocas, un tamaño de lote más pequeño requirió más cómputo ya que los parámetros de la red se actualizaron con más frecuencia. Se toma un tamaño de lote de 20 en la arquitectura del modelo final, como un compromiso entre el número de épocas y la velocidad de entrenamiento.
+
+La RNA fue insensible a la función de activación y utilizamos la función de activación ReLU, $R(\zeta)$, en las capas ocultas, representada matemáticamente como:
+
+\begin{equation}
+R(\zeta) = \max(0, \zeta)
+\end{equation}
+
+La RNA requiere 2 capas ocultas o más para modelar con precisión la relación no lineal de velocidad y tasa de rotación. Una vez que el modelo es más grande que 2 capas ocultas, fue relativamente insensible a un número creciente de capas. Para asegurar que el modelo pudiera capturar las tendencias no lineales, la arquitectura del modelo final contiene 3 capas ocultas.
+
+\begin{thebibliography}{99}
+
+\bibitem{abadi2016}
+Abadi, M., et al. (2016). Tensorflow: large-scale machine learning on heterogeneous distributed systems. \textit{arXiv preprint arXiv:1603.04467}.
+
+\bibitem{aguirre2018}
+Aguirre-López, M.A., et al. (2018). Trajectories reconstruction of spinning baseball pitches by three-point-based algorithm. \textit{Applied Mathematics and Computation}, 319, 2--12.
+
+\bibitem{deshpande2017}
+Deshpande, S.K. \& Wyner, A. (2017). A hierarchical bayesian model of pitch framing. \textit{Journal of Quantitative Analysis in Sports}, 13, 95--112.
+
+\bibitem{fawzi2016}
+Fawzi, A., et al. (2016). Robustness of classifiers: from adversarial to random noise. \textit{Advances in Neural Information Processing Systems}, 29.
+
+\bibitem{giordano1996}
+Giordano, N.J. (1996). \textit{Computational physics}. Prentice Hall, Hoboken, New Jersey.
+
+\bibitem{he2019}
+He, Z., et al. (2019). Parametric noise injection: trainable randomness to improve deep neural network robustness against adversarial attack. \textit{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}, 588--597.
+
+\bibitem{hintz2022}
+Hintz, E.S. (2022). Moneyball: the computational turn in professional sports management. \textit{Papers of the Business History Conference}.
+
+\bibitem{huang2021}
+Huang, M.-L. \& Li, Y.-Z. (2021). Use of machine learning and deep learning to predict the outcomes of major league baseball matches. \textit{Applied Sciences}, 11, 4499.
+
+\bibitem{kim2019}
+Kim, J., et al. (2019). Precise 3d baseball pitching trajectory estimation using multiple unsynchronized cameras. \textit{IEEE Access}, 7, 166463--166475.
+
+\bibitem{kingma2014}
+Kingma, D.P. \& Ba, J. (2014). Adam: a method for stochastic optimization. \textit{arXiv preprint arXiv:1412.6980}.
+
+\bibitem{lee2022}
+Lee, J.S. (2022). Prediction of pitch type and location in baseball using ensemble model of deep neural networks. \textit{Journal of Sports Analytics}, 8, 115--126.
+
+\bibitem{metropolis1949}
+Metropolis, N. \& Ulam, S. (1949). The Monte Carlo method. \textit{Journal of the American Statistical Association}, 44, 335--341.
+
+\bibitem{park2017}
+Park, J. \& Park, S. (2017). A study on prediction of attendance in Korean baseball league using artificial neural network. \textit{KIPS Transactions on Software and Data Engineering}, 6, 565--572.
+
+\bibitem{rubinstein2016}
+Rubinstein, R.Y. \& Kroese, D.P. (2016). \textit{Simulation and the Monte Carlo method}. John Wiley \& Sons, Hoboken, New Jersey.
+
+\bibitem{sietsma1991}
+Sietsma, J. \& Dow, R.J. (1991). Creating artificial neural networks that generalize. \textit{Neural Networks}, 4, 67--79.
+
+\bibitem{smith2009}
+Smith, L. \& Downey, J. (2009). Predicting baseball hall of fame membership using a radial basis function network. \textit{Journal of Quantitative Analysis in Sports}, 5.
+
+\bibitem{umemura2021}
+Umemura, K., et al. (2021). Application of VBGMM for pitch type classification: analysis of Trackman's pitch tracking data. \textit{Japanese Journal of Statistics and Data Science}, 4, 41--71.
+
+\end{thebibliography}
+
+\end{document}
