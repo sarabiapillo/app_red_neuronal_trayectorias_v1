@@ -1,5 +1,22 @@
 # Red Neuronal para Reconstrucción de Lanzamientos de Béisbol ⚾🧠
 
+[![Licencia MIT](https://img.shields.io/badge/Licencia-MIT-green.svg)](LICENSE)
+[![Código Abierto](https://img.shields.io/badge/Código-Abierto-blue.svg)]()
+[![Uso Libre](https://img.shields.io/badge/Uso-Libre-brightgreen.svg)]()
+
+**Desarrollado por:** Juan Diego Sarabia Cadenas
+
+## 🆓 Proyecto Público y Gratuito
+
+**Este proyecto es completamente libre y de código abierto.** No se requiere usuario ni contraseña para usarlo.
+
+- ✅ **Sin registro requerido** - Clona y usa directamente
+- ✅ **Licencia MIT** - Uso libre para cualquier propósito
+- ✅ **Código abierto** - Modifica y distribuye libremente
+- ✅ **Sin restricciones** - Uso educativo, personal y comercial permitido
+
+---
+
 Aplicación que implementa un método basado en redes neuronales artificiales para reconstruir parámetros de lanzamientos de béisbol (velocidad inicial y tasa de rotación) a partir de tres puntos de trayectoria.
 
 ## 📋 Requisitos
@@ -10,9 +27,10 @@ Aplicación que implementa un método basado en redes neuronales artificiales pa
 ## 🚀 Instalación Rápida
 
 ### 1. Clonar el repositorio
+
 ```bash
-git clone https://github.com/tu-usuario/RedNeuronalBeisbol.git
-cd RedNeuronalBeisbol
+git clone https://github.com/sarabiapillo/app_red_neuronal_trayectorias_v1.git
+cd app_red_neuronal_trayectorias_v1
 ```
 
 ### 2. Instalar dependencias
@@ -89,4 +107,25 @@ pip install numpy matplotlib
 
 ## 📄 Licencia
 
-MIT License - Uso libre para fines educativos e investigación.
+**MIT License** - Uso completamente libre.
+
+**Autor:** Juan Diego Sarabia Cadenas
+
+Este proyecto es de código abierto bajo la licencia MIT. Puedes:
+- ✅ Usar el código para cualquier propósito
+- ✅ Modificar y adaptar el código
+- ✅ Distribuir copias del código
+- ✅ Incluirlo en proyectos comerciales
+
+**No se requiere usuario ni contraseña** - Solo clona el repositorio y ejecuta.
+
+```
+MIT License
+
+Copyright (c) 2024 Juan Diego Sarabia Cadenas
+
+Se concede permiso, de forma gratuita, a cualquier persona que obtenga una copia
+de este software y archivos de documentación asociados, para utilizar el Software
+sin restricción, incluyendo sin limitación los derechos de usar, copiar, modificar,
+fusionar, publicar, distribuir, sublicenciar y/o vender copias del Software.
+```
